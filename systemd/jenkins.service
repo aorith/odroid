@@ -1,0 +1,23 @@
+[Unit]
+Description=Jenkins
+Requires=docker.service
+After=network.target docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm \
+	  --name=jenkins \
+	  -v /home/aorith/.config/docker_configs/jenkins:/var/jenkins_home \
+	  -e TZ=Europe/Madrid \
+	  -p 8080:8080 \
+	  -e UMASK=002 \
+	  -e PUID=1000 \
+	  -e PGID=1001 \
+	  -m 400m \
+	  --cpus="2" \
+	  nijlunsing/jenkins-armhf
+
+ExecStop=/usr/bin/docker stop -t 30 jenkins
+
+[Install]
+WantedBy=default.target

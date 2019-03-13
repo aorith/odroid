@@ -1,0 +1,67 @@
+DOTFILES="/home/$(whoami)/githome/odroid"
+
+
+###############################################
+
+BASE_DIR=(
+bin
+)
+
+CONFIG_DIR=(
+)
+
+LOCAL_DIR=(
+)
+
+SYSTEMD_DIR=(
+jackett.service
+sonarr.service
+radarr.service
+tomcat.service
+jenkins.service
+syncthing.service
+)
+###############################################
+###############################################
+
+echo
+echo "... Linking: $HOME/.local ..."
+echo
+for F in "${LOCAL_DIR[@]}"
+do
+	rm -vrf "$HOME/.local/$F"
+	ln -vs "$DOTFILES/.local/$F" "$HOME/.local/$F"
+done
+
+echo
+echo "... Linking: $HOME ..."
+echo
+for F in "${BASE_DIR[@]}"
+do
+	rm -vrf "${HOME:?}/$F"
+	ln -vs "$DOTFILES/$F" "$HOME/$F"
+done
+
+echo
+echo "... Linking: $HOME/.config ..."
+echo
+for F in "${CONFIG_DIR[@]}"
+do
+	rm -vrf "$HOME/.config/$F"
+	ln -vs "$DOTFILES/.config/$F" "$HOME/.config/$F"
+done
+
+
+echo
+echo "... Linking: /etc/systemd/system ..."
+echo
+for F in "${SYSTEMD_DIR[@]}"
+do
+	sudo rm -vrf "/etc/systemd/system/$F"
+	sudo ln -vs "$DOTFILES/systemd/$F" "/etc/systemd/system/$F"
+done
+
+sudo systemctl daemon-reload
+
+echo; echo git submodule update --init
+
