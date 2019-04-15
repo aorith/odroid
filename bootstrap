@@ -17,6 +17,7 @@ SYSTEMD_DIR=(
 jackett.service
 sonarr.service
 radarr.service
+lidarr.service
 tomcat.service
 jenkins.service
 syncthing.service
@@ -60,6 +61,14 @@ do
 	sudo rm -vrf "/etc/systemd/system/$F"
 	sudo ln -vs "$DOTFILES/systemd/$F" "/etc/systemd/system/$F"
 done
+
+
+echo
+echo "... Linking /var/www/html ..."
+echo
+sudo rm -vri "/var/www/html"
+sudo ln -vs "$DOTFILES/html" "/var/www/html"
+
 
 sudo systemctl daemon-reload
 
