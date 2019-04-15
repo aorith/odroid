@@ -6,20 +6,17 @@ After=network.target docker.service
 [Service]
 Restart=always
 ExecStart=/usr/bin/docker run --rm \
-	  --name=radarr \
-	  -v /home/aorith/.config/docker_configs/radarr:/config \
-	  -v /media/datos/media/downloads/movies:/downloads \
-	  -v /media/datos/media/videos/movies:/movies \
-	  -v /media/datos:/media/datos \
-	  -e TZ=Europe/Madrid \
-	  -p 7878:7878 \
-	  -e UMASK=002 \
-	  -e PUID=1000 \
-	  -e PGID=1001 \
-	  -m 400m \
-	  --cpus="2" \
-	  --network="tv" \
-	  lsioarmhf/radarr
+          --name=radarr \
+          -v /home/aorith/.config/docker_configs/radarr:/config \
+          -v /media/datos/media/downloads/movies:/downloads \
+          -v /media/datos/media/videos/movies:/movies \
+          -v /media/datos:/media/datos \
+          -e TZ=Europe/Madrid \
+          -p 7878:7878 \
+          -e UMASK=002 \
+          -e PUID=1000 \
+          -e PGID=1001 \
+          linuxserver/radarr
 
 ExecStop=/usr/bin/docker stop -t 30 radarr
 

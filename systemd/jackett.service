@@ -6,19 +6,16 @@ After=network.target docker.service
 [Service]
 Restart=always
 ExecStart=/usr/bin/docker run --rm \
-	  --name=jackett \
-	  -v /home/aorith/.config/docker_configs/jackett:/config \
-	  -v /media/datos/media/downloads:/downloads \
-	  -v /media/datos:/media/datos \
-	  -e TZ=Europe/Madrid \
-	  -p 9117:9117 \
-	  -e UMASK=002 \
-	  -e PUID=1000 \
-	  -e PGID=1001 \
-	  -m 300m \
-	  --cpus="1" \
-      --network="tv" \
-	  lsioarmhf/jackett
+          --name=jackett \
+          -v /home/aorith/.config/docker_configs/jackett:/config \
+          -v /media/datos/media/downloads:/downloads \
+          -v /media/datos:/media/datos \
+          -e TZ=Europe/Madrid \
+          -p 9117:9117 \
+          -e UMASK=002 \
+          -e PUID=1000 \
+          -e PGID=1001 \
+          linuxserver/jackett
 
 ExecStop=/usr/bin/docker stop -t 30 jackett
 
