@@ -2,15 +2,21 @@
 sudo systemctl stop jackett
 sudo systemctl stop sonarr
 sudo systemctl stop radarr
+sudo systemctl stop lidarr
 
-docker system prune --all -f
-docker pull lsioarmhf/jackett
-docker pull lsioarmhf/sonarr
-docker pull lsioarmhf/radarr
+if [ "$1" = "prune" ]
+then
+    docker system prune --all -f
+fi
 
-docker network create tv
-sleep 10
+if [ "$1" = "stop" ]
+then
+    exit 0
+fi
+
+sleep 2
 
 sudo systemctl start jackett
 sudo systemctl start radarr
 sudo systemctl start sonarr
+sudo systemctl start lidarr
