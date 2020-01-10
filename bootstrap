@@ -1,5 +1,5 @@
-DOTFILES="/home/$(whoami)/githome/odroid"
-
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+DOTFILES="$SCRIPTPATH"
 
 ###############################################
 
@@ -14,6 +14,7 @@ LOCAL_DIR=(
 )
 
 SYSTEMD_DIR=(
+cardigann.service
 jackett.service
 sonarr.service
 radarr.service
