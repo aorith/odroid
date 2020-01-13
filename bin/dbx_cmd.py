@@ -2,26 +2,18 @@
 import argparse
 import os
 import sys
+import subprocess
+import logging
 import hashlib
 import time
-import contextlib
+import psutil
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
-from tqdm import tqdm
 import dropbox
 
-print("-------------------------------------------------------------------")
-print("[" + datetime.now().strftime("%Y%m%d%H%M%S") + "] STARTING...")
-print(sys.argv)
-print("-------------------------------------------------------------------")
-
-tmp_path = os.path.join(os.environ['HOME'], 'Downloads')
-token_file = os.path.join(os.environ['HOME'], 'secret/api-dropbox.txt')
-try:
-    with open(token_file, "r") as f:
-        TOKEN = f.readline().rstrip("\n")
-        PASSWORD = f.readline().rstrip("\n")
-except Exception:
-    print("ERROR: Couldn't load token_file {}".format(token_file))
+HOME = os.environ['HOME']
+tmp_path = os.path.join(HOME, 'Downloads')
+token_file = os.path.join(HOME, 'secret/api-dropbox.txt')
 
 parser = argparse.ArgumentParser(
     description='Compresses and uploads selected folder to Dropbox')
@@ -29,11 +21,36 @@ parser.add_argument('-r', '--remote-folder', nargs=1, required=True,
                     help='Destination folder in your Dropbox')
 parser.add_argument('-l', '--local-folder', nargs=1, required=True,
                     help='Local directory to upload')
-parser.add_argument('-t', '--token', default=TOKEN,
-                    help='Access token '
-                    '(see https://www.dropbox.com/developers/apps)')
 parser.add_argument('-m', '--max-files', nargs=1, type=int, required=True,
                     help='Maximum number of backups to store (will delete oldest)')
+
+args = parser.parse_args()
+
+logpath = filename = os.path.join(
+    HOME,
+    'logs',
+    'dbx_cmd.py_' + args.remote_folder[0].split("/")[-1] + ".log"
+)
+handler = RotatingFileHandler(logpath, maxBytes=202400, backupCount=2)
+formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
+handler.setFormatter(formatter)
+logger = logging.getLogger()
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+
+logging.info("-----------------------------------------")
+logging.info("STARTING...")
+logging.info(sys.argv)
+logging.info("-----------------------------------------")
+
+try:
+    with open(token_file, "r") as f:
+        TOKEN = f.readline().rstrip("\n")
+        PASSWORD = f.readline().rstrip("\n")
+except Exception:
+    logging.error("Couldn't load token_file {}".format(token_file))
+    exit()
 
 
 def md5(fname):
@@ -45,6 +62,24 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 
+def check_space(dbx, file_size=None):
+    sp = dbx.users_get_space_usage()
+    used = sp.used
+    total = sp.allocation.get_individual().allocated
+    perc = round((used * 100) / total, 0)
+    logging.info("Disk space used: {}/{} MBs ({}%).".format(
+        round(used / (1024*1024), 2),
+        round(total / (1024*1024), 2),
+        perc
+    )
+    )
+    if file_size is not None:
+        if total - used < file_size:
+            logging.error("Not enough free space to upload: {} MBs.".format(
+                round(file_size / (1024*1024), 2)))
+            exit()
+
+
 def upload_file(dbx, fname, dest):
     """ upload to dropbox, f = file to upload
     dest = path to upload the file, including filename """
@@ -52,65 +87,66 @@ def upload_file(dbx, fname, dest):
     fname = os.path.realpath(fname)
     file_size = os.path.getsize(fname)
     chunk_size = 4 * 1024 * 1024
+    elapsed = 0
+    check_space(dbx, file_size)
     with open(fname, 'rb') as f:
         if file_size <= chunk_size:
-            data = f.read()
-            with stopwatch('upload %d bytes' % len(data)):
-                try:
-                    res = dbx.files_upload(data, dest, mute=True)
-                except dropbox.exceptions.ApiError as err:
-                    print("*** API error ", err)
-                    return None
+            t0 = time.time()
+            try:
+                res = dbx.files_upload(f.read(), dest, mute=True)
+                elapsed = upload_info(file_size, f.tell(), t0, elapsed)
+            except dropbox.exceptions.ApiError as err:
+                logging.error("*** API error " + str(err))
+                return None
         else:
-            with tqdm(total=file_size, desc="Uploaded") as pbar:
-                try:
-                    upload_session_start_result = dbx.files_upload_session_start(
-                        f.read(chunk_size)
-                    )
-                    pbar.update(chunk_size)
-                    cursor = dropbox.files.UploadSessionCursor(
-                        session_id=upload_session_start_result.session_id,
-                        offset=f.tell(),
-                    )
-                    commit = dropbox.files.CommitInfo(path=dest)
-                    while f.tell() < file_size:
-                        if (file_size - f.tell()) <= chunk_size:
-                            res = dbx.files_upload_session_finish(
-                                f.read(chunk_size), cursor, commit
-                            )
-                        else:
-                            dbx.files_upload_session_append(
-                                f.read(chunk_size),
-                                cursor.session_id,
-                                cursor.offset,
-                            )
-                            cursor.offset = f.tell()
-                        pbar.update(chunk_size)
-                except dropbox.exceptions.ApiError as err:
-                    print("ERROR: *** API error ", err)
-                    return None
-
-    print("Uploaded as", str(res.name.encode('utf8')))
+            try:
+                t0 = time.time()
+                upload_session_start_result = dbx.files_upload_session_start(
+                    f.read(chunk_size)
+                )
+                cursor = dropbox.files.UploadSessionCursor(
+                    session_id=upload_session_start_result.session_id,
+                    offset=f.tell(),
+                )
+                commit = dropbox.files.CommitInfo(path=dest)
+                elapsed = upload_info(file_size, f.tell(), t0, elapsed)
+                while f.tell() < file_size:
+                    t0 = time.time()
+                    if (file_size - f.tell()) <= chunk_size:
+                        res = dbx.files_upload_session_finish(
+                            f.read(chunk_size), cursor, commit
+                        )
+                    else:
+                        dbx.files_upload_session_append(
+                            f.read(chunk_size),
+                            cursor.session_id,
+                            cursor.offset,
+                        )
+                        cursor.offset = f.tell()
+                    elapsed = upload_info(file_size, f.tell(), t0, elapsed)
+            except dropbox.exceptions.ApiError as err:
+                logging.error("*** API error " + str(err))
+                return None
     return res
 
 
-@contextlib.contextmanager
-def stopwatch(message):
-    """Context manager to print how long a block of code took."""
-    t0 = time.time()
-    try:
-        yield
-    finally:
-        t1 = time.time()
-        print('Total elapsed time for %s: %.3f' % (message, t1 - t0))
+def upload_info(file_size, uploaded, t0, elapsed):
+    t1 = time.time()
+    elapsed = elapsed + (t1 - t0)
+    uploaded = round(uploaded/(1024 * 1024), 2)
+    file_size = round(file_size/(1024 * 1024), 2)
+    msg = "Uploading {}/{} MBs done, elapsed {} seconds".format(
+        uploaded, file_size, round(elapsed, 2))
+    logging.info(msg)
+    return elapsed
 
 
 def delete_file(dbx, f):
     f = os.path.realpath(f)
     try:
         dbx.files_delete(f)
-    except Exception:
-        print("ERROR: Couldn't delete the file: {}".format(f))
+    except Exception as err:
+        logging.error("Couldn't delete the file: {}\n{}".format(f, err))
 
 
 def list_folder(dbx, folder):
@@ -118,12 +154,14 @@ def list_folder(dbx, folder):
     try:
         res = dbx.files_list_folder(folder)
     except Exception:
-        print("Folder '{}' doesn't exist, creating it".format(folder))
+        logging.warning(
+            "Folder '{}' doesn't exist, creating it".format(folder))
         try:
             dbx.files_create_folder(folder)
             res = dbx.files_list_folder(folder)
         except Exception:
-            print("ERROR: Can't create folder {}".format(folder))
+            logging.error("Can't create folder {}".format(folder))
+            exit()
     return res
 
 
@@ -152,53 +190,104 @@ def oldest_file(dbx, folder):
     return files[0]
 
 
-args = parser.parse_args()
+def compress_gzip(filename):
+    logging.info("Starting to gzip {}".format(filename))
+    cmd = "gzip -9 {}".format(filename)
+    print_cpu_mem_info()
+    try:
+        result = subprocess.check_output(
+            cmd, stderr=subprocess.STDOUT, shell=True)
+    except Exception as err:
+        print_cpu_mem_info()
+        logging.error("Failed to gzip file {}\n{}".format(filename, err))
+        os.remove(filename)
+        exit()
+    print_cpu_mem_info()
+    logging.info("Finished gzipping file.")
+    return filename + '.gz'
 
-dbx = dropbox.Dropbox(args.token, timeout=2000)
+
+def create_tar(path, tar_path):
+    # tar and calculate md5
+    logging.info("Starting to tarball the file.")
+    cmd = "find {} -print0 | LC_ALL=C sort -z | tar --no-recursion --null -T - -cvf {} >/dev/null 2>&1".format(
+        path, tar_path
+    )
+    try:
+        result = subprocess.check_output(
+            cmd, stderr=subprocess.STDOUT, shell=True)
+        logging.info("%s", result.decode('utf8'))
+    except Exception as err:
+        logging.error(
+            "Process failed while trying to tar: %s\n%s", tar_path, err)
+        exit()
+    logging.info("Finished the tarball.")
+
+def gpg_encrypt(filename):
+    logging.info("Starting to encrypt %s", filename)
+    cmd = "gpg --passphrase {} --batch --quiet --yes -c {}".format(PASSWORD, filename)
+    print_cpu_mem_info()
+    try:
+        result = subprocess.check_output(
+            cmd, stderr=subprocess.STDOUT, shell=True)
+        logging.info("%s", result.decode('utf8'))
+    except Exception as err:
+        print_cpu_mem_info()
+        logging.error("Process failed while trying to encrypt: %s", filename)
+        exit()
+    os.remove(filename)
+    print_cpu_mem_info()
+    logging.info("Finished encryption.")
+    return filename + '.gpg'
+
+def print_cpu_mem_info():
+    vm = psutil.virtual_memory()
+    memt = str(round(vm.total / (1024*1024), 2))
+    memf = str(round(vm.free / (1024*1024), 2))
+    memu = str(round(vm.used / (1024*1024), 2))
+    memp = str(vm.percent)
+    mem_string = "Used: " + memu + " Free: " + memf + " Total:" + memt + " MBs (" + memp + "%)."
+    cpu = str(psutil.cpu_percent()) + '%'
+    logging.info("\nMEM: %s\nCPU: %s", mem_string, cpu)
+
+
+# SCRIPT START
+
+dbx = dropbox.Dropbox(TOKEN, timeout=2000)
 
 local_folder = os.path.realpath(args.local_folder[0])
 remote_folder = args.remote_folder[0].rstrip("/")
 curr_time = datetime.now().strftime("%Y%m%d%H%M%S")
 
-ext = ".tar"
-compressed_name1 = curr_time + ext
-compressed_name1 = os.path.join(tmp_path, compressed_name1)
+tar_name = curr_time + '.tar'
+tar_path = os.path.join(tmp_path, tar_name)
 
-# tar and calculate md5, can't find a way to have same md5 with 7zip even removing metadata also tar stores permissions
-cmd = "find {} -print0 | LC_ALL=C sort -z | tar --no-recursion --null -T - -cvf {} >/dev/null 2>&1".format(
-    local_folder, compressed_name1
-)
-os.system(cmd)
-#os.system("find {} -print0 | LC_ALL=C sort -z | GZIP=-n tar --no-recursion --null -T - -zcvf {}".format(local_folder, compressed_name))
+create_tar(local_folder, tar_path)
 
-compressed_md5 = md5(compressed_name1)
-if file_exists(dbx, compressed_md5, "/" + remote_folder):
-    print("File with md5:{} already exists, no backup needed...".format(compressed_md5))
-    os.remove(compressed_name1)
+tar_md5 = md5(tar_path)
+if file_exists(dbx, tar_md5, "/" + remote_folder):
+    logging.info("Found md5 \"%s\" in Dropbox, no backup needed.", tar_md5)
+    os.remove(tar_path)
 else:
-    ext = ".7z"
-    compressed_name = compressed_name1 + ext
-    # careful, -sdel deletes files after compression
-    cmd = "7z a -r -mx9 -mtm- -mtc- -mta- -t7z -sdel -y {} {} -p{}".format(
-        compressed_name, compressed_name1, PASSWORD
-    )
-    os.system(cmd)
+    gzipped_name = compress_gzip(tar_path)
+    encrypted_name = gpg_encrypt(gzipped_name)
 
-    new_name = curr_time + "-" + compressed_md5 + ext
+    ext = '.tar.gz.gpg'
+    new_name = curr_time + "-" + tar_md5 + ext
     new_name = os.path.join(tmp_path, new_name)
-    os.rename(compressed_name, new_name)
+    os.rename(encrypted_name, new_name)
 
-    print("File {} doesn't exists, uploading...".format(new_name))
+    logging.info("File %s not in Dropbox, uploading...", new_name)
     res = upload_file(
         dbx, new_name,
         "/" + remote_folder + "/" + os.path.basename(new_name)
     )
     if res is not None:
-        print("File uploaded successfully to ", str(res.path_display))
+        logging.info("File uploaded successfully to %s", res.path_display)
     else:
-        print("Failed to upload the file.")
+        logging.error("Failed to upload the file.")
 
-    print("Cleaning...")
+    logging.info("Cleaning...")
     os.remove(new_name)
 
 # finally delete older backups if we are over the max_files limit
@@ -206,12 +295,13 @@ if count_of_files(dbx, "/" + remote_folder) > args.max_files[0]:
     file_to_delete = oldest_file(dbx, "/" + remote_folder)
     if file_to_delete.endswith(ext):
         file_path = "/" + remote_folder + "/" + file_to_delete
-        print("Deleting {}...".format(file_path))
+        logging.info("Deleting \'%s\'...", file_path)
         delete_file(dbx, file_path)
     else:
-        print("Tried to delete file {} but it doesn't appear to be a {} archive".format(
-            file_to_delete, ext)
-        )
-print("-------------------------------------------------------------------")
-print("[" + datetime.now().strftime("%Y%m%d%H%M%S") + "] END.")
-print("-------------------------------------------------------------------")
+        logging.warning("Tried to delete the file \'%s\' but it doesn't appear to be a \'%s\' archive", file_to_delete, ext)
+
+logging.info("-----------------------------------------")
+check_space(dbx)
+logging.info("END.")
+logging.info("-----------------------------------------")
+
