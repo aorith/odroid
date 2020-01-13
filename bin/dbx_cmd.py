@@ -16,14 +16,13 @@ tmp_path = os.path.join(HOME, 'Downloads')
 token_file = os.path.join(HOME, 'secret/api-dropbox.txt')
 
 parser = argparse.ArgumentParser(
-    description='Compresses and uploads selected folder to Dropbox')
+    description='Compress, encrypt and upload selected folder to Dropbox')
 parser.add_argument('-r', '--remote-folder', nargs=1, required=True,
                     help='Destination folder in your Dropbox')
 parser.add_argument('-l', '--local-folder', nargs=1, required=True,
                     help='Local directory to upload')
 parser.add_argument('-m', '--max-files', nargs=1, type=int, required=True,
                     help='Maximum number of backups to store (will delete oldest)')
-
 args = parser.parse_args()
 
 logpath = filename = os.path.join(
@@ -31,25 +30,20 @@ logpath = filename = os.path.join(
     'logs',
     'dbx_cmd.py_' + args.remote_folder[0].split("/")[-1] + ".log"
 )
-handler = RotatingFileHandler(logpath, maxBytes=202400, backupCount=2)
+handler = RotatingFileHandler(logpath, maxBytes=102400, backupCount=2)
 formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
 handler.setFormatter(formatter)
 logger = logging.getLogger()
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-
-logging.info("-----------------------------------------")
-logging.info("STARTING...")
-logging.info(sys.argv)
-logging.info("-----------------------------------------")
-
+# Open token file
 try:
     with open(token_file, "r") as f:
         TOKEN = f.readline().rstrip("\n")
         PASSWORD = f.readline().rstrip("\n")
 except Exception:
-    logging.error("Couldn't load token_file {}".format(token_file))
+    logging.error("Couldn't load token_file %s", token_file)
     exit()
 
 
@@ -71,7 +65,7 @@ def check_space(dbx, file_size=None):
         round(used / (1024*1024), 2),
         round(total / (1024*1024), 2),
         perc
-    )
+        )
     )
     if file_size is not None:
         if total - used < file_size:
@@ -125,7 +119,7 @@ def upload_file(dbx, fname, dest):
                         cursor.offset = f.tell()
                     elapsed = upload_info(file_size, f.tell(), t0, elapsed)
             except dropbox.exceptions.ApiError as err:
-                logging.error("*** API error " + str(err))
+                logging.error("*** API error\n%s", err)
                 return None
     return res
 
@@ -146,7 +140,7 @@ def delete_file(dbx, f):
     try:
         dbx.files_delete(f)
     except Exception as err:
-        logging.error("Couldn't delete the file: {}\n{}".format(f, err))
+        logging.error("Couldn't delete the file: %s\n%s", f, err)
 
 
 def list_folder(dbx, folder):
@@ -155,12 +149,12 @@ def list_folder(dbx, folder):
         res = dbx.files_list_folder(folder)
     except Exception:
         logging.warning(
-            "Folder '{}' doesn't exist, creating it".format(folder))
+            "Folder \'%s\' doesn't exist, creating it", folder)
         try:
             dbx.files_create_folder(folder)
             res = dbx.files_list_folder(folder)
         except Exception:
-            logging.error("Can't create folder {}".format(folder))
+            logging.error("Can't create folder %s", folder)
             exit()
     return res
 
@@ -191,7 +185,7 @@ def oldest_file(dbx, folder):
 
 
 def compress_gzip(filename):
-    logging.info("Starting to gzip {}".format(filename))
+    logging.info("Starting to gzip %s", filename)
     cmd = "gzip -9 {}".format(filename)
     print_cpu_mem_info()
     try:
@@ -199,9 +193,10 @@ def compress_gzip(filename):
             cmd, stderr=subprocess.STDOUT, shell=True)
     except Exception as err:
         print_cpu_mem_info()
-        logging.error("Failed to gzip file {}\n{}".format(filename, err))
+        logging.error("Failed to gzip file %s\n%s", filename, err)
         os.remove(filename)
         exit()
+
     print_cpu_mem_info()
     logging.info("Finished gzipping file.")
     return filename + '.gz'
@@ -229,7 +224,8 @@ def gpg_encrypt(filename):
     print_cpu_mem_info()
     try:
         result = subprocess.check_output(
-            cmd, stderr=subprocess.STDOUT, shell=True)
+            cmd, stderr=subprocess.STDOUT, shell=True
+            )
         logging.info("%s", result.decode('utf8'))
     except Exception as err:
         print_cpu_mem_info()
@@ -246,12 +242,17 @@ def print_cpu_mem_info():
     memf = str(round(vm.free / (1024*1024), 2))
     memu = str(round(vm.used / (1024*1024), 2))
     memp = str(vm.percent)
-    mem_string = "Used: " + memu + " Free: " + memf + " Total:" + memt + " MBs (" + memp + "%)."
+    mem_string = "Used: " + memu + " Free: " + memf + " Total: " + memt + " MBs (" + memp + "%)."
     cpu = str(psutil.cpu_percent()) + '%'
     logging.info("\nMEM: %s\nCPU: %s", mem_string, cpu)
 
 
 # SCRIPT START
+
+logging.info("-----------------------------------------")
+logging.info("STARTING...")
+logging.info(sys.argv)
+logging.info("-----------------------------------------")
 
 dbx = dropbox.Dropbox(TOKEN, timeout=2000)
 
@@ -263,8 +264,8 @@ tar_name = curr_time + '.tar'
 tar_path = os.path.join(tmp_path, tar_name)
 
 create_tar(local_folder, tar_path)
-
 tar_md5 = md5(tar_path)
+
 if file_exists(dbx, tar_md5, "/" + remote_folder):
     logging.info("Found md5 \"%s\" in Dropbox, no backup needed.", tar_md5)
     os.remove(tar_path)
@@ -279,7 +280,8 @@ else:
 
     logging.info("File %s not in Dropbox, uploading...", new_name)
     res = upload_file(
-        dbx, new_name,
+        dbx,
+        new_name,
         "/" + remote_folder + "/" + os.path.basename(new_name)
     )
     if res is not None:
