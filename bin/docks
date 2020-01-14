@@ -1,0 +1,26 @@
+#!/bin/sh
+
+if [ "$1" = "stop" ]
+then
+    sudo systemctl stop cardigann
+    sudo systemctl stop jackett
+    sudo systemctl stop sonarr
+    sudo systemctl stop radarr
+    sudo systemctl stop lidarr
+
+    exit 0
+fi
+
+if [ "$1" = "start" ]
+then
+    #sudo systemctl start cardigann
+    sudo systemctl start jackett
+    sudo systemctl start sonarr
+    sudo systemctl start radarr
+    #sudo systemctl start lidarr
+
+    exit 0
+fi
+
+echo "Usage: $(basename $0) stop|start"
+exit 1

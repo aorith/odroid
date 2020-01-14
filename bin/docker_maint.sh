@@ -1,13 +1,10 @@
 #!/bin/sh
-sudo systemctl stop jackett
-sudo systemctl stop sonarr
-sudo systemctl stop radarr
-sudo systemctl stop lidarr
+echo "Stopping services..."
+/home/aorith/bin/docks stop
 
-if [ "$1" = "prune" ]
-then
-    docker system prune --all -f
-fi
+echo "Pruning docker..."
+sudo docker system prune --all -f
+echo "Pruning done..."
 
 if [ "$1" = "stop" ]
 then
@@ -16,7 +13,5 @@ fi
 
 sleep 2
 
-sudo systemctl start jackett
-sudo systemctl start radarr
-sudo systemctl start sonarr
-sudo systemctl start lidarr
+echo "Starting services..."
+/home/aorith/bin/docks start
