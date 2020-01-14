@@ -242,7 +242,7 @@ def print_cpu_mem_info():
     memf = str(round(vm.free / (1024*1024), 2))
     memu = str(round(vm.used / (1024*1024), 2))
     memp = str(vm.percent)
-    mem_string = "Used: " + memu + " Free: " + memf + " Total: " + memt + " MBs (" + memp + "%)."
+    mem_string = "Total: " + memt + " Used: " + memu + " Free: " + memf + " MBs (" + memp + "%)."
     cpu = str(psutil.cpu_percent()) + '%'
     logging.info("\nMEM: %s\nCPU: %s", mem_string, cpu)
 
