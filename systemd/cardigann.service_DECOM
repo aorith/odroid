@@ -1,0 +1,22 @@
+[Unit]
+Description=Cardigann
+Requires=docker.service
+After=network.target docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm \
+          --name=cardigann \
+          -v /home/aorith/.config/docker_configs/cardigann:/config \
+          -e TZ=Europe/Madrid \
+          -p 5060:5060 \
+          -e UMASK_SET=002 \
+          -e PUID=1000 \
+          -e PGID=1001 \
+          -e HTTP_PROXY=192.168.1.5:8118 \
+          linuxserver/cardigann
+
+ExecStop=/usr/bin/docker stop -t 30 cardigann
+
+[Install]
+WantedBy=default.target

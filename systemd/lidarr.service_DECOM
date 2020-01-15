@@ -1,0 +1,24 @@
+[Unit]
+Description=Lidarr
+Requires=docker.service
+After=network.target docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm \
+          --name=lidarr \
+          -v /home/aorith/.config/docker_configs/lidarr:/config \
+          -v /media/datos/media/downloads/music:/downloads \
+          -v /media/datos/Syncthing/Phone-Music:/music \
+          -v /media/datos:/media/datos \
+          -e TZ=Europe/Madrid \
+          -p 8686:8686 \
+          -e UMASK_SET=002 \
+          -e PUID=1000 \
+          -e PGID=1001 \
+          linuxserver/lidarr
+
+ExecStop=/usr/bin/docker stop -t 30 lidarr
+
+[Install]
+WantedBy=default.target
