@@ -1,26 +1,25 @@
 #!/bin/sh
+CURR_PATH=$(pwd)
+DOCKERFILE="/home/aorith/githome/odroid/docker/"
+cd $DOCKERFILE
 
 if [ "$1" = "stop" ]
 then
-    sudo systemctl stop cardigann
-    sudo systemctl stop jackett
-    sudo systemctl stop sonarr
-    sudo systemctl stop radarr
-    sudo systemctl stop lidarr
-
-    exit 0
-fi
-
-if [ "$1" = "start" ]
+    docker stop cardigann
+    docker stop jackett
+    docker stop sonarr
+    docker stop radarr
+    docker stop lidarr
+elif [ "$1" = "start" ]
 then
-    #sudo systemctl start cardigann
-    sudo systemctl start jackett
-    sudo systemctl start sonarr
-    sudo systemctl start radarr
-    #sudo systemctl start lidarr
-
-    exit 0
+    #docker-compose up -d cardigann
+    docker-compose up -d jackett
+    docker-compose up -d sonarr
+    docker-compose up -d radarr
+    #docker-compose up -d lidarr
+else
+    echo "Usage: $(basename $0) stop|start"
+    exit 1
 fi
 
-echo "Usage: $(basename $0) stop|start"
-exit 1
+cd $CURR_PATH
