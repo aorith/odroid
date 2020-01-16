@@ -14,13 +14,7 @@ LOCAL_DIR=(
 )
 
 SYSTEMD_DIR=(
-cardigann.service
-jackett.service
-sonarr.service
-radarr.service
-lidarr.service
 tomcat.service
-jenkins.service
 syncthing.service
 )
 ###############################################
@@ -64,11 +58,11 @@ do
 done
 
 
-echo
-echo "... Linking /var/www/html ..."
-echo
-sudo rm -vri "/var/www/html"
-sudo ln -vs "$DOTFILES/html" "/var/www/html"
+#echo
+#echo "... Linking /var/www/html ..."
+#echo
+#sudo rm -vri "/var/www/html"
+#sudo ln -vs "$DOTFILES/html" "/var/www/html"
 
 
 sudo systemctl daemon-reload

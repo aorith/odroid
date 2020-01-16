@@ -238,13 +238,14 @@ def gpg_encrypt(filename):
 
 def print_cpu_mem_info():
     vm = psutil.virtual_memory()
+    swapp = str(psutil.swap_memory().percent) + '%'
     memt = str(round(vm.total / (1024*1024), 2))
     memf = str(round(vm.free / (1024*1024), 2))
     memu = str(round(vm.used / (1024*1024), 2))
     memp = str(vm.percent)
     mem_string = "Total: " + memt + " Used: " + memu + " Free: " + memf + " MBs (" + memp + "%)."
     cpu = str(psutil.cpu_percent()) + '%'
-    logging.info("\nMEM: %s\nCPU: %s", mem_string, cpu)
+    logging.info("\nMEM: %s\SWAP: %s\nCPU: %s", mem_string, swapp, cpu)
 
 
 # SCRIPT START

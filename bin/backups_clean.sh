@@ -2,9 +2,11 @@
 BACKUP_PATH="/media/datos/backup"
 cd "$BACKUP_PATH" || exit 1
 
-#tempsensor
-while [ "$(find "$BACKUP_PATH/tempsensor/" | wc -l)" -ge 40 ]; do
-	f=$(find "$BACKUP_PATH/tempsensor/" | tail -1)
-	rm -v "$BACKUP_PATH/tempsensor/$f"
+# tempsensor - Delete backups when more than 40 present
+max_backups=40
+directory="tempsensor"
+while [ "$(find "$BACKUP_PATH/$directory/" | wc -l)" -ge $max_backups ]; do
+	f=$(find "$BACKUP_PATH/$directory/" | tail -1)
+	rm -v "$f"
 	sleep 1
 done
