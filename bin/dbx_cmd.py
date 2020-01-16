@@ -12,7 +12,7 @@ from datetime import datetime
 import dropbox
 
 HOME = os.environ['HOME']
-tmp_path = os.path.join(HOME, 'Downloads')
+tmp_path = os.path.join('/tmp')
 token_file = os.path.join(HOME, 'secret/api-dropbox.txt')
 
 parser = argparse.ArgumentParser(
