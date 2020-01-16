@@ -1,15 +1,15 @@
 #!/bin/bash
 
-THRESHOLD=95
+THRESHOLD=94
+DISKS=$(ls -1 /dev/sd??)  # /dev/sdaX
 
-
-for i in 1 2
+echo "$DISKS" | while read -r disk
 do
-    use_perc=$(df -k "/dev/sda$i" | tail -1 | awk '{print $5}' | tr -d '%')
+    use_perc=$(df -k "$disk" | tail -1 | awk '{print $5}' | tr -d '%')
     if [ "$use_perc" -gt "$THRESHOLD" ]
     then
-        /home/aorith/bin/telmsg.sh "$(date +'%Y-%m-%d %H:%M:%S') - WARNING: disk space of /dev/sda$i
-        $(df -h /dev/sda$i)"
+        /home/aorith/bin/telmsg.sh "$(date +'%Y-%m-%d %H:%M:%S') - WARNING: disk space of $disk
+        $(df -h $disk)"
     fi
 done
 
