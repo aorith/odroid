@@ -5,10 +5,10 @@ import sys
 import subprocess
 import logging
 import hashlib
-import time
-import psutil
+from time import time
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
+import psutil
 import dropbox
 
 HOME = os.environ['HOME']
@@ -47,6 +47,16 @@ except Exception:
     exit()
 
 
+def timer(function):
+    def wrapper(*args, **kwargs):
+        before = time()
+        rv = function(*args, **kwargs)
+        elapsed = time() - before
+        logging.info('%s took %.3f seconds.', function.__name__, elapsed)
+        return rv
+    return wrapper
+
+
 def md5(fname):
     fname = os.path.realpath(fname)
     hash_md5 = hashlib.md5()
@@ -64,8 +74,7 @@ def check_space(dbx, file_size=None):
     logging.info("Disk space used: {}/{} MBs ({}%).".format(
         round(used / (1024*1024), 2),
         round(total / (1024*1024), 2),
-        perc
-        )
+        perc)
     )
     if file_size is not None:
         if total - used < file_size:
@@ -74,6 +83,7 @@ def check_space(dbx, file_size=None):
             exit()
 
 
+@timer
 def upload_file(dbx, fname, dest):
     """ upload to dropbox, f = file to upload
     dest = path to upload the file, including filename """
@@ -85,7 +95,7 @@ def upload_file(dbx, fname, dest):
     check_space(dbx, file_size)
     with open(fname, 'rb') as f:
         if file_size <= chunk_size:
-            t0 = time.time()
+            t0 = time()
             try:
                 res = dbx.files_upload(f.read(), dest, mute=True)
                 elapsed = upload_info(file_size, f.tell(), t0, elapsed)
@@ -94,7 +104,7 @@ def upload_file(dbx, fname, dest):
                 return None
         else:
             try:
-                t0 = time.time()
+                t0 = time()
                 upload_session_start_result = dbx.files_upload_session_start(
                     f.read(chunk_size)
                 )
@@ -105,7 +115,7 @@ def upload_file(dbx, fname, dest):
                 commit = dropbox.files.CommitInfo(path=dest)
                 elapsed = upload_info(file_size, f.tell(), t0, elapsed)
                 while f.tell() < file_size:
-                    t0 = time.time()
+                    t0 = time()
                     if (file_size - f.tell()) <= chunk_size:
                         res = dbx.files_upload_session_finish(
                             f.read(chunk_size), cursor, commit
@@ -125,7 +135,7 @@ def upload_file(dbx, fname, dest):
 
 
 def upload_info(file_size, uploaded, t0, elapsed):
-    t1 = time.time()
+    t1 = time()
     elapsed = elapsed + (t1 - t0)
     uploaded = round(uploaded/(1024 * 1024), 2)
     file_size = round(file_size/(1024 * 1024), 2)
@@ -184,6 +194,7 @@ def oldest_file(dbx, folder):
     return files[0]
 
 
+@timer
 def compress_gzip(filename):
     logging.info("Starting to gzip %s", filename)
     cmd = "gzip -9 {}".format(filename)
@@ -202,6 +213,7 @@ def compress_gzip(filename):
     return filename + '.gz'
 
 
+@timer
 def create_tar(path, tar_path):
     # tar and calculate md5
     logging.info("Starting to tarball the file.")
@@ -218,14 +230,17 @@ def create_tar(path, tar_path):
         exit()
     logging.info("Finished the tarball.")
 
+
+@timer
 def gpg_encrypt(filename):
     logging.info("Starting to encrypt %s", filename)
-    cmd = "gpg --passphrase {} --batch --quiet --yes -c {}".format(PASSWORD, filename)
+    cmd = "gpg --passphrase {} --batch --quiet --yes -c {}".format(
+        PASSWORD, filename)
     print_cpu_mem_info()
     try:
         result = subprocess.check_output(
             cmd, stderr=subprocess.STDOUT, shell=True
-            )
+        )
         logging.info("%s", result.decode('utf8'))
     except Exception as err:
         print_cpu_mem_info()
@@ -236,6 +251,7 @@ def gpg_encrypt(filename):
     logging.info("Finished encryption.")
     return filename + '.gpg'
 
+
 def print_cpu_mem_info():
     vm = psutil.virtual_memory()
     swapp = str(psutil.swap_memory().percent) + '%'
@@ -243,9 +259,10 @@ def print_cpu_mem_info():
     memf = str(round(vm.free / (1024*1024), 2))
     memu = str(round(vm.used / (1024*1024), 2))
     memp = str(vm.percent)
-    mem_string = "Total: " + memt + " Used: " + memu + " Free: " + memf + " MBs (" + memp + "%)."
+    mem_string = "Total: " + memt + " Used: " + memu + \
+        " Free: " + memf + " MBs (" + memp + "%)."
     cpu = str(psutil.cpu_percent()) + '%'
-    logging.info("\nMEM: %s\SWAP: %s\nCPU: %s", mem_string, swapp, cpu)
+    logging.info("\nMEM: %s\nSWAP: %s\nCPU: %s", mem_string, swapp, cpu)
 
 
 # SCRIPT START
@@ -301,7 +318,8 @@ if count_of_files(dbx, "/" + remote_folder) > args.max_files[0]:
         logging.info("Deleting \'%s\'...", file_path)
         delete_file(dbx, file_path)
     else:
-        logging.warning("Tried to delete the file \'%s\' but it doesn't appear to be a \'%s\' archive", file_to_delete, ext)
+        logging.warning(
+            "Tried to delete the file \'%s\' but it doesn't appear to be a \'%s\' archive", file_to_delete, ext)
 
 logging.info("-----------------------------------------")
 check_space(dbx)
