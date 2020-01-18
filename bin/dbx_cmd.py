@@ -214,6 +214,25 @@ def compress_gzip(filename):
 
 
 @timer
+def compress_xz(filename):
+    logging.info("Starting to xz %s", filename)
+    cmd = "xz -6 {}".format(filename)
+    print_cpu_mem_info()
+    try:
+        result = subprocess.check_output(
+            cmd, stderr=subprocess.STDOUT, shell=True)
+    except Exception as err:
+        print_cpu_mem_info()
+        logging.error("Failed to xz file %s\n%s", filename, err)
+        os.remove(filename)
+        exit()
+
+    print_cpu_mem_info()
+    logging.info("Finished compressing file with xz.")
+    return filename + '.xz'
+
+
+@timer
 def create_tar(path, tar_path):
     # tar and calculate md5
     logging.info("Starting to tarball the file.")
@@ -288,10 +307,10 @@ if file_exists(dbx, tar_md5, "/" + remote_folder):
     logging.info("Found md5 \"%s\" in Dropbox, no backup needed.", tar_md5)
     os.remove(tar_path)
 else:
-    gzipped_name = compress_gzip(tar_path)
-    encrypted_name = gpg_encrypt(gzipped_name)
+    compressed_name = compress_xz(tar_path)
+    encrypted_name = gpg_encrypt(compressed_name)
 
-    ext = '.tar.gz.gpg'
+    ext = '.' + encrypted_name.split(".", 1)[-1]
     new_name = curr_time + "-" + tar_md5 + ext
     new_name = os.path.join(tmp_path, new_name)
     os.rename(encrypted_name, new_name)
