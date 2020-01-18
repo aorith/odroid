@@ -1,0 +1,65 @@
+#!/usr/bin/gnuplot
+reset
+set terminal svg enhanced size 1150,535 font "Arial,9"
+set output '/dev/null'
+set datafile separator ","
+
+# Retrieve statistical properties
+set xdata time
+set timefmt "%Y%m%d %H%M%S"
+#plot '<cat /home/aorith/tempsensor/data/*.dat' u 1:2
+#min_y = GPVAL_DATA_Y_MIN
+#max_y = GPVAL_DATA_Y_MAX
+#min_x = GPVAL_DATA_X_MIN
+#max_x = GPVAL_DATA_X_MAX
+#f(x) = mean_y
+#set fit quiet
+#set fit logfile '/dev/null'
+#fit f(x) '<cat /home/aorith/tempsensor/data/*.dat' u 0:2 via mean_y
+
+set grid
+set tics out nomirror
+set border 3 front linetype black linewidth 0.5 dashtype solid
+set ytics 0.5
+set y2tics 1
+#set xtics min_x,min_x/86000,max_x
+#set xtics min_x,min_x/86000,max_x
+#set border 3 front linetype black linewidth 0.5 dashtype solid
+#set style line 1 linetype 1 linecolor rgb "red" linewidth 1.0
+
+set output '/var/www/html/temp/02_all.svg'
+set title 'Full data'
+set key inside top left
+set key font ",9"
+
+#################
+set format x "%d %b\n%Y"
+#set xrange [min_x:max_x]
+#set yrange [min_y-(min_y*0.005):max_y+(max_y*0.005)]
+
+# media
+#set arrow from min_x,mean_y*0.9 to max_x,mean_y nohead lc rgb "#6321d4" lw 0.8
+# Plotting the minimum and maximum ranges with a shaded background
+#set label 1 gprintf("Min = %g", min_y) at char 22,char 3 font ", 9"
+#set label 2 gprintf("Max = %g", max_y) at char 22, char 4 font ", 9"
+#set label 3 gprintf("Media = %g", mean_y) at char 36,4 font ", 9"
+media = `bash /home/aorith/tempsensor/graphs/scr/t_avg.sh`
+plot media w lines lw 0.8 lc rgb "#070707" t 'Media', \
+'<cat /home/aorith/tempsensor/data/*.dat' u 1:2 w lines lt 1 lc rgb "#ff1212" lw 1.5 t 'Room', \
+'<cat /home/aorith/tempsensor/data/*.dat' u 1:3 w lines lt 1 lc rgb "#7766cc" t 'Hum' axes x1y2, \
+'<bash /home/aorith/tempsensor/graphs/scr/t_avg_daily.sh' u 1:2 w lines lw 0.6 lt 1 lc rgb "#12aa12" t 'Avg'
+#####################
+
+
+#set xdata time
+#set timefmt "%Y-%m-%d %H:%M:%S"
+#set format x "%b\n%Y"
+#set yrange [min:max]
+#set key inside bottom right
+#unset key
+#set xlabel 't'
+#set ylabel 'Cº'
+#set autoscale x
+#set autoscale y
+#set title 'Full data'
+#plot '<cat /home/aorith/tempsensor/data/*.dat' u 2:1 title 'all temp' w lines

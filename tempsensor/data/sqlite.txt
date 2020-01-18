@@ -1,0 +1,9 @@
+sqlite3 tempearture.db "insert into temperature values(datetime('now', 'localtime'), 3, 3, 50.3);"
+
+sqlite3 temperature.db "select * from temperature;"
+
+sqlite3 temperature.db "select * from temperature where date LIKE '2019-04-06 %';"
+
+sqlite3 temperature.db "select time(Date), CTEMP from temperature where date LIKE '2019-04-07 %';"
+
+sqlite3 temperature.db "select date(Date), CTEMP from temperature where date LIKE '2019-04-07 %';"
