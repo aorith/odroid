@@ -1,0 +1,44 @@
+# /etc/systemd/system/bitcoind.service
+
+[Unit]
+Description=Bitcoin daemon
+After=network.target
+
+[Service]
+# Externalip = cat /var/lib/tor/bitcoin-service/hostname
+ExecStart= /usr/bin/bitcoind -conf=/home/aorith/.bitcoin/bitcoin.conf -pid=/run/bitcoind/bitcoind.pid
+
+#Tells Bitcoin to shutdown safely when stopped.
+ExecStop= /usr/local/bin/bitcoin-cli stop
+
+# Creates /run/bitcoind owned by bitcoin
+RuntimeDirectory=bitcoind
+User=aorith
+Group=odroid
+Type=forking
+PIDFile=/run/bitcoind/bitcoind.pid
+Restart=on-failure
+
+# Hardening measures
+####################
+
+# Provide a private /tmp and /var/tmp.
+PrivateTmp=true
+
+# Mount /usr, /boot/ and /etc read-only for the process.
+ProtectSystem=full
+
+# Disallow the process and all of its children to gain
+# new privileges through execve().
+NoNewPrivileges=true
+
+# Use a new /dev namespace only populated with API pseudo devices
+# such as /dev/null, /dev/zero and /dev/random.
+PrivateDevices=true
+
+# Deny the creation of writable and executable memory mappings.
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target
+
