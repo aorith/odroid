@@ -4,21 +4,36 @@ services:
     container_name: cardigann
     image: linuxserver/cardigann
     ports:
-        - "5060:5060/tcp"
+      - "5060:5060/tcp"
     environment:
       TZ: Europe\Madrid
       UMASK_SET: 002
       PUID: 1000
       PGID: 1001
-      HTTP_PROXY: 192.168.1.5:8118
+      HTTP_PROXY: torproxy:8118
     volumes:
        - /home/aorith/.config/docker_configs/cardigann:/config
     restart: "no"
 
 
+  torproxy:
+    container_name: torproxy
+    image: aorith/torproxy
+    ports:
+      - "8118:8118"
+    restart: "no"
+    build:
+      context: .
+      dockerfile: torproxy
+      args:
+        b: 1500 # kb per sec
+
+
   jackett:
     container_name: jackett
     image: linuxserver/jackett
+    depends_on:
+      - torproxy
     ports:
         - "9117:9117/tcp"
     environment:
@@ -26,7 +41,7 @@ services:
       UMASK_SET: 002
       PUID: 1000
       PGID: 1001
-      RUN_OPTS: --ProxyConnection=192.168.1.5:8118
+      RUN_OPTS: --ProxyConnection=torproxy:8118
     volumes:
        - /home/aorith/.config/docker_configs/jackett:/config
        - /media/datos/media/downloads:/downloads
@@ -101,3 +116,4 @@ services:
        - /media/datos/media/videos/tv:/tv
        - /media/datos:/media/datos
     restart: "no"
+
