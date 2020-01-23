@@ -10,13 +10,15 @@ then
     docker stop sonarr
     docker stop radarr
     docker stop lidarr
+    docker stop torproxy
 elif [ "$1" = "start" ]
 then
+    docker-compose up -d torproxy
     #docker-compose up -d cardigann
-    docker-compose up -d jackett
     docker-compose up -d sonarr
     docker-compose up -d radarr
     #docker-compose up -d lidarr
+    docker-compose up -d jackett
 else
     echo "Usage: $(basename $0) stop|start"
     exit 1
