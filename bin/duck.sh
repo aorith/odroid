@@ -1,42 +1,29 @@
 #!/bin/bash
 
+THRESHOLD=72000
 TOKEN=$(sed -n '1p' "$HOME/secret/duckdns.txt")
 DOM1=$(sed -n '2p' "$HOME/secret/duckdns.txt")
 DOM2=$(sed -n '3p' "$HOME/secret/duckdns.txt")
+DOMS=( ${DOM1} ${DOM2} )
 
-THRESHOLD=72000
+for d in "${DOMS[@]}"
+do
+    output=$(curl -k -s "https://www.duckdns.org/update?domains=$d&token=$TOKEN&ip=")
 
-output=$(curl -k -s "https://www.duckdns.org/update?domains=$DOM1&token=$TOKEN&ip=")
-if [ "$output" != "OK" ]
-then
-    # if flag exist and is older than seconds below, send alert
-    if [ -e "/tmp/fail-$DOM1" ]
+    if [ "$output" != "OK" ]
     then
-        if [ "$(( $(date +"%s") - $(stat -c "%Y" "/tmp/fail-$DOM1") ))" -gt "$THRESHOLD" ]
+        # if flag exist and is older then THRESHOLD seconds -> send alert
+        if [ -e "/tmp/fail-$d" ]
         then
-            /home/aorith/bin/telmsg.sh "$(date +'%Y%m%d %H:%M:%S') -> duckdns failed on $DOM1"
+            if [ "$(( $(date +"%s") - $(stat -c "%Y" "/tmp/fail-$d") ))" -gt "$THRESHOLD" ]
+            then
+                /home/aorith/bin/telmsg.sh "$(date +'%Y%m%d %H:%M:%S') -> duckdns failed on $d"
+            fi
+        else
+            touch "/tmp/fail-$d"
         fi
     else
-        touch "/tmp/fail-$DOM1"
+        rm -f "/tmp/fail-$d"
     fi
-else
-    rm -f "/tmp/fail-$DOM1"
-fi
-
-output=$(curl -k -s "https://www.duckdns.org/update?domains=$DOM2&token=$TOKEN&ip=")
-if [ "$output" != "OK" ]
-then
-    # if flag exist and is older than seconds below, send alert
-    if [ -e "/tmp/fail-$DOM2" ]
-    then
-        if [ "$(( $(date +"%s") - $(stat -c "%Y" "/tmp/fail-$DOM2") ))" -gt "$THRESHOLD" ]
-        then
-            /home/aorith/bin/telmsg.sh "$(date +'%Y%m%d %H:%M:%S') -> duckdns failed on $DOM2"
-        fi
-    else
-        touch "/tmp/fail-$DOM2"
-    fi
-else
-    rm -f "/tmp/fail-$DOM2"
-fi
+done
 
