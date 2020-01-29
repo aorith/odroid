@@ -17,6 +17,7 @@ SYSTEMD_DIR=(
 tomcat.service
 syncthing.service
 bitcoind.service
+qbittorrent.service
 )
 ###############################################
 ###############################################
