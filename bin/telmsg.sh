@@ -1,8 +1,8 @@
 #!/bin/bash
 
 TEXT="$*"
-TOKEN="$(head -1 /home/aorith/secret/api-telbot.txt)"
-CHATID="$(tail -1 /home/aorith/secret/api-telbot.txt)"
+TOKEN="$(sed -n 1p /home/aorith/secret/api-telbot.txt)"
+CHATID="$(sed -n 2p /home/aorith/secret/api-telbot.txt)"
 TIME="10"
 URL="https://api.telegram.org/bot$TOKEN/sendMessage"
 
