@@ -21,6 +21,8 @@ services:
     image: aorith/torproxy
     ports:
       - "8118:8118"
+      - "9050:9050"
+      - "9051:9051"
     restart: "no"
     build:
       context: .
