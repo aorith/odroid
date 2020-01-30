@@ -116,4 +116,12 @@ services:
        - /media/datos/media/videos/tv:/tv
        - /media/datos:/media/datos
     restart: "no"
-
+networks:
+    default:
+        driver: bridge
+        driver_opts:
+            com.docker.network.enable_ipv6: "false"
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.16.0.0/16
