@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# BACKUPS
+
+## JOPLIN
+
+JOPLIN_BIN="$HOME/.joplin-bin/bin/joplin"
+JOPLIN_BACKUP_FOLDER="/media/datos/Syncthing/SYNC_STUFF/Joplin-Backups"
+
+upd_joplin() {
+    NPM_CONFIG_PREFIX=$HOME/.joplin-bin npm install -g joplin markdown-it
+}
+
+upd_joplin
+$JOPLIN_BIN --log-level error sync
+$JOPLIN_BIN --log-level error export --format jex "$JOPLIN_BACKUP_FOLDER/$(date +'%Y%m%d%H%M%S').jex"
+
+
+######################################################
+
+# CLEANING
+
+# which folders to clean
+# folder|max_files|extension_of_backups
+# files exceeding the max_files number will be deleted
+cfg="""
+$JOPLIN_BACKUP_FOLDER|14|jex
+"""
+
+IFS="|"
+is_number='^[0-9]+$'
+line=0
+echo "$cfg" | while read -r folder max_files extension
+do
+    # checks
+    let "line=line+1"
+    [[ -z "$folder" || -z "$max_files" || -z "$extension" ]] && continue
+    [[ ! -d "$folder" || ! "$max_files" =~ $is_number ]] && echo "ERROR: check cfg line $line" && continue
+
+    max_loops=2
+    cd "$folder" || (echo "ERROR: can't cd to $folder" && exit 1)
+    while [ "$(find "$folder/" -type f -name "*$extension" | wc -l)" -gt $max_files ]; do
+	    f=$(find "$folder/" -type f -name "*.$extension" -print | LC_ALL=C sort -n | head -1)
+	    rm -v "$f"
+        let "max_loops=max_loops-1"
+        [[ "$max_loops" -le 0 ]] && exit 0
+	    sleep 1
+    done
+done
+
