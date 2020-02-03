@@ -1,0 +1,14 @@
+[Unit]
+Description=Knocker wrapper
+#After=network.target
+
+[Service]
+User=aorith
+Type=oneshot
+ExecStart=/home/aorith/bin/knock.sh open
+RemainAfterExit=true
+ExecStop=/home/aorith/bin/knock.sh close
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
