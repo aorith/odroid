@@ -18,6 +18,7 @@ tomcat.service
 syncthing.service
 bitcoind.service
 qbittorrent.service
+knocker.service
 )
 ###############################################
 ###############################################
