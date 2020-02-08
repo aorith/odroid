@@ -22,6 +22,15 @@ close_the_door() {
     /home/aorith/bin/telmsg.sh "$msg"
 }
 
+check_ufw() {
+    if ! sudo ufw --force enable;
+    then
+        /home/aorith/bin/telmsg.sh "UFW failed to start!"
+    fi
+}
+
+# run
+check_ufw
 [[ "$1" = "open" ]] && open_sesame && exit 0
 [[ "$1" = "close" ]] && close_the_door && exit 0
 
