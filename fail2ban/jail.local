@@ -1,0 +1,26 @@
+[DEFAULT]
+ignoreip = 192.168.0.0/24 192.168.1.0/24 127.0.0.1/8 ::1
+
+# configure nftables
+banaction = nftables-allports
+chain     = fail2ban
+
+[sshd]
+enabled = true
+bantime = 24h
+maxretry = 2
+
+#[qbittorrent]
+#enabled = true
+#filter = qbittorrent
+#bantime = 24h
+#logpath = /var/log/apache2/aorith.duckdns.org.access.log
+#maxretry = 2
+
+[apache-custom]
+enabled = true
+filter = apache-custom
+bantime = 24h
+banaction = nftables-allports
+logpath = /var/log/apache2/aorith.duckdns.org.access.log
+maxretry = 2
