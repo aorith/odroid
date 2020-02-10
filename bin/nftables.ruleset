@@ -1,0 +1,102 @@
+#!/usr/sbin/nft -f
+
+# Start by flushing all the rules.
+flush ruleset
+
+# Defining variables is easy in nftables scripts.
+define docker_v4 = 172.17.0.0/16
+define docker_v6 = fcdd::/48
+define iface = eth0
+define vpn = wg0
+define vpn_net = 10.10.10.0/24
+define guarded_ports = {22}
+define knock_ports = {1234,2345,3456,4567}
+define private_net = { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16 }
+
+table inet firewall {
+
+    set tcp_ports {
+        type inet_service
+        elements = {
+            80, # http
+            443, # https
+            8080, # Syncthing - changed from 22000 to 8080 bc of connected to myself problem and outgoing blocked in DXC
+            51413 # Transmission
+        }
+    }
+
+    set udp_ports {
+        type inet_service
+        elements = {
+            21027 # "Syncthing discovery broadcasts on IPv4 and multicasts on IPv6"
+        }
+    }
+
+	set clients_ipv4 {
+		type ipv4_addr
+		flags timeout
+	}
+
+	set clients_ipv6 {
+		type ipv6_addr
+		flags timeout
+	}
+
+	set candidates_ipv4 {
+		type ipv4_addr . inet_service
+		flags timeout
+	}
+
+	set candidates_ipv6 {
+		type ipv6_addr . inet_service
+		flags timeout
+	}
+
+    chain PortKnock {
+ 		tcp dport 1234 add @candidates_ipv4 {ip  saddr . 2345 timeout 5s}
+		tcp dport 1234 add @candidates_ipv6 {ip6 saddr . 2345 timeout 5s}
+		tcp dport 2345 ip  saddr . tcp dport @candidates_ipv4 add @candidates_ipv4 {ip  saddr . 3456 timeout 5s}
+		tcp dport 2345 ip6 saddr . tcp dport @candidates_ipv6 add @candidates_ipv6 {ip6 saddr . 3456 timeout 5s}
+		tcp dport 3456 ip  saddr . tcp dport @candidates_ipv4 add @candidates_ipv4 {ip  saddr . 4567 timeout 5s}
+		tcp dport 3456 ip6 saddr . tcp dport @candidates_ipv6 add @candidates_ipv6 {ip6 saddr . 4567 timeout 5s}
+		tcp dport 4567 ip  saddr . tcp dport @candidates_ipv4 add @clients_ipv4 {ip  saddr timeout 30s} counter log prefix "[Firewall Successful portknock] "
+		tcp dport 4567 ip6 saddr . tcp dport @candidates_ipv6 add @clients_ipv6 {ip6 saddr timeout 30s} counter log prefix "[Firewall Successful portknock] "
+    }
+
+    chain fail2ban {}
+
+    chain input {
+        type filter hook input priority 0
+        policy drop
+
+        ct state {established, related} accept comment "accept all connections related to connections made by us"
+        ct state invalid drop comment "early drop of invalid packets"
+        iif lo accept comment "accept loopback"
+        #iif != lo ip daddr 127.0.0.1/8 counter drop comment "drop connections to loopback not coming from loopback"
+        #iif != lo ip6 daddr ::1/128 counter drop comment "drop connections to loopback not coming from loopback"
+        ip protocol icmp accept comment "accept all ICMP types"
+        ip6 nexthdr icmpv6 accept comment "accept all ICMP types"
+        # rules
+        jump fail2ban
+        tcp dport $knock_ports jump PortKnock
+		tcp dport $guarded_ports ip  saddr @clients_ipv4 counter log prefix "[Firewall REMOTE SSH] " accept
+		tcp dport $guarded_ports ip6 saddr @clients_ipv6 counter accept
+        ip saddr $private_net accept comment "accept all local-network traffic"
+        tcp dport @tcp_ports accept
+        udp dport @udp_ports accept
+        counter comment "count dropped packets"
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+        counter comment "count dropped packets"
+    }
+
+# If you're not counting packets, this chain can be omitted.
+    chain output {
+        type filter hook output priority 0; policy accept;
+        #counter comment "count accepted packets"
+    }
+}
+
+# vim: syntax=nftables
