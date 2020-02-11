@@ -5,23 +5,35 @@ cd $DOCKERFILE
 
 if [ "$1" = "stop" ]
 then
-    docker stop cardigann
+    #docker stop cardigann
+    #docker stop lidarr
     docker stop jackett
     docker stop sonarr
     docker stop radarr
-    docker stop lidarr
     docker stop torproxy
+    sudo systemctl stop docker
+    sudo systemctl stop containerd
 elif [ "$1" = "start" ]
 then
+    sudo systemctl start docker
+    sudo systemctl start containerd
     docker-compose up -d torproxy
-    #docker-compose up -d cardigann
+    docker-compose up -d jackett
     docker-compose up -d sonarr
     docker-compose up -d radarr
+    #docker-compose up -d cardigann
     #docker-compose up -d lidarr
-    docker-compose up -d jackett
+elif [ "$1" = "prune" ]
+then
+    sudo systemctl start containerd
+    sudo systemctl start docker
+    sudo docker system prune --all -f
+    sudo systemctl stop docker
+    sudo systemctl stop containerd
 else
     echo "Usage: $(basename $0) stop|start"
     exit 1
 fi
 
 cd $CURR_PATH
+
