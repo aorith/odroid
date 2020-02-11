@@ -2,6 +2,12 @@
 
 THRESHOLD=94
 DISKS=$(ls -1 /dev/sd??)  # /dev/sdaX
+DISKS="${DISKS}
+$(ls -d1 /run/user/[0-9]*)" # /run/user/1000
+DISKS="${DISKS}
+$(ls -1 /dev/mmcblk0??)" # /dev/mmcblk0XX
+DISKS="${DISKS}
+/tmp"
 
 echo "$DISKS" | while read -r disk
 do
