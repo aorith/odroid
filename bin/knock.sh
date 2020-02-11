@@ -1,30 +1,36 @@
 #!/bin/bash
 now=$(date +'%Y.%m.%d %H:%M:%S')
-msg="$now -"
+header="$(basename $0) $now"
+
+telmsg () {
+    /home/aorith/bin/telmsg.sh "$header
+    $1"
+}
+
 open_sesame() {
     if sudo iptables -A OPEN_SESAME -p tcp --dport 22 -j ACCEPT;
     then
-        msg="knock.sh: $(sudo tail -4 /var/log/knockd.log | grep "OPEN SESAME")"
+        msg="$(sudo tail -4 /var/log/knockd.log | grep "OPEN SESAME")"
     else
-        msg="knock.sh: $msg error opening ssh"
+        msg="error opening ssh"
     fi
-    /home/aorith/bin/telmsg.sh "$msg"
+    telmsg "$msg"
 }
 
 close_the_door() {
     if sudo iptables -D OPEN_SESAME -p tcp --dport 22 -j ACCEPT;
     then
-        msg="knock.sh: $msg ssh is closed"
+        msg="ssh is closed"
     else
-        msg="knock.sh: $msg error closing ssh"
+        msg="error closing ssh"
     fi
-    /home/aorith/bin/telmsg.sh "$msg"
+    telmsg "$msg"
 }
 
 check_fw() {
     if ! sudo iptables -L |grep -q "INPUT (policy DROP";
     then
-        /home/aorith/bin/telmsg.sh "Careful; Input policy is not set correcly"
+        telmsg "Careful; Input policy is not set correcly"
     fi
 }
 
