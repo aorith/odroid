@@ -3,14 +3,13 @@
 # Start by flushing all the rules.
 flush ruleset
 
-# Defining variables is easy in nftables scripts.
 define docker_v4 = 172.17.0.0/16
 define docker_v6 = fcdd::/48
 define iface = eth0
 define vpn = wg0
 define vpn_net = 10.10.10.0/24
 define guarded_ports = {22}
-define knock_ports = {1234,2345,3456,4567}
+define knock_ports = {2345,1234,4567,3456}  # just an example
 define private_net = { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16 }
 
 table inet firewall {
@@ -20,7 +19,7 @@ table inet firewall {
         elements = {
             80, # http
             443, # https
-            8080, # Syncthing - changed from 22000 to 8080 bc of connected to myself problem and outgoing blocked in DXC
+            8080, # Syncthing - changed from 22000 to 8080
             51413 # Transmission
         }
     }
@@ -69,6 +68,7 @@ table inet firewall {
         type filter hook input priority 0
         policy drop
 
+	jump fail2ban
         ct state {established, related} accept comment "accept all connections related to connections made by us"
         ct state invalid drop comment "early drop of invalid packets"
         iif lo accept comment "accept loopback"
@@ -77,10 +77,10 @@ table inet firewall {
         ip protocol icmp accept comment "accept all ICMP types"
         ip6 nexthdr icmpv6 accept comment "accept all ICMP types"
         # rules
-        jump fail2ban
+        
         tcp dport $knock_ports jump PortKnock
-		tcp dport $guarded_ports ip  saddr @clients_ipv4 counter log prefix "[Firewall REMOTE SSH] " accept
-		tcp dport $guarded_ports ip6 saddr @clients_ipv6 counter accept
+	tcp dport $guarded_ports ip  saddr @clients_ipv4 counter log prefix "[Firewall REMOTE SSH] " accept
+	tcp dport $guarded_ports ip6 saddr @clients_ipv6 counter accept
         ip saddr $private_net accept comment "accept all local-network traffic"
         tcp dport @tcp_ports accept
         udp dport @udp_ports accept
