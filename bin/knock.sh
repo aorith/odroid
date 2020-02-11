@@ -1,36 +1,35 @@
 #!/bin/bash
-
 now=$(date +'%Y.%m.%d %H:%M:%S')
 msg="$now -"
 open_sesame() {
-    if sudo ufw allow from any to any port 22 proto tcp comment 'allow global ssh';
+    if sudo iptables -A OPEN_SESAME -p tcp --dport 22 -j ACCEPT;
     then
-        msg="$(sudo tail -4 /var/log/knockd.log | grep "OPEN SESAME")"
+        msg="knock.sh: $(sudo tail -4 /var/log/knockd.log | grep "OPEN SESAME")"
     else
-        msg="$msg error opening ssh"
+        msg="knock.sh: $msg error opening ssh"
     fi
     /home/aorith/bin/telmsg.sh "$msg"
 }
 
 close_the_door() {
-    if sudo ufw delete allow from any to any port 22 proto tcp comment 'allow global ssh';
+    if sudo iptables -D OPEN_SESAME -p tcp --dport 22 -j ACCEPT;
     then
-        msg="$msg ssh is closed"
+        msg="knock.sh: $msg ssh is closed"
     else
-        msg="$msg error closing ssh"
+        msg="knock.sh: $msg error closing ssh"
     fi
     /home/aorith/bin/telmsg.sh "$msg"
 }
 
-check_ufw() {
-    if ! sudo ufw --force enable;
+check_fw() {
+    if ! sudo iptables -L |grep -q "INPUT (policy DROP";
     then
-        /home/aorith/bin/telmsg.sh "UFW failed to start!"
+        /home/aorith/bin/telmsg.sh "Careful; Input policy is not set correcly"
     fi
 }
 
 # run
-check_ufw
+check_fw
 [[ "$1" = "open" ]] && open_sesame && exit 0
 [[ "$1" = "close" ]] && close_the_door && exit 0
 
