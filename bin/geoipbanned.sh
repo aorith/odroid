@@ -12,4 +12,4 @@ do
     geoiplookup "$i" | head -1 | cut -d':' -f 2
 done
 
-echo "Total: $(echo "$IPLIST" | tr ' ' '\n'| wc -l)"
+echo -n "Total: " && [[ -z "$IPLIST" ]] && echo 0 || echo "$(echo "$IPLIST" | tr ' ' '\n'| wc -l)"
