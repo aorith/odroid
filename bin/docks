@@ -1,10 +1,10 @@
 #!/bin/sh
 CURR_PATH=$(pwd)
-DOCKERFILE="/home/aorith/githome/odroid/docker/"
-cd $DOCKERFILE
+DOCKERFILE_PATH="/home/aorith/githome/odroid/docker/"
+cd $DOCKERFILE_PATH
 
-if [ "$1" = "stop" ]
-then
+f_stop() {
+    echo "Stopping docker appliances..."
     #docker stop cardigann
     #docker stop lidarr
     docker stop jackett
@@ -13,8 +13,10 @@ then
     docker stop torproxy
     sudo systemctl stop docker
     sudo systemctl stop containerd
-elif [ "$1" = "start" ]
-then
+}
+
+f_start() {
+    echo "Starting docker appliances..."
     sudo systemctl start docker
     sudo systemctl start containerd
     docker-compose up -d torproxy
@@ -23,17 +25,32 @@ then
     docker-compose up -d radarr
     #docker-compose up -d cardigann
     #docker-compose up -d lidarr
-elif [ "$1" = "prune" ]
-then
-    sudo systemctl start containerd
+}
+
+f_prune() {
+    echo "Pruning all..."
+    f_stop
     sudo systemctl start docker
     sudo docker system prune --all -f
     sudo systemctl stop docker
     sudo systemctl stop containerd
-else
-    echo "Usage: $(basename $0) stop|start"
-    exit 1
-fi
+}
+
+case "$1" in
+    stop)
+        f_stop
+        ;;
+    start)
+        f_start
+        ;;
+    prune)
+        f_prune
+        ;;
+    *)
+        echo "Usage: $(basename $0) stop|start|prune"
+        exit 1
+        ;;
+esac
 
 cd $CURR_PATH
-
+exit 0
