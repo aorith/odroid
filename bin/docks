@@ -1,16 +1,11 @@
 #!/bin/sh
 CURR_PATH=$(pwd)
-DOCKERFILE_PATH="/home/aorith/githome/odroid/docker/"
+DOCKERFILE_PATH="/home/aorith/githome/odroid/docker"
 cd $DOCKERFILE_PATH
 
 f_stop() {
     echo "Stopping docker appliances..."
-    #docker stop cardigann
-    #docker stop lidarr
-    docker stop jackett
-    docker stop sonarr
-    docker stop radarr
-    docker stop torproxy
+    docker stop $(docker ps -a -q) 2>/dev/null
     sudo systemctl stop docker
     sudo systemctl stop containerd
 }
@@ -19,12 +14,14 @@ f_start() {
     echo "Starting docker appliances..."
     sudo systemctl start docker
     sudo systemctl start containerd
-    docker-compose up -d torproxy
-    docker-compose up -d jackett
-    docker-compose up -d sonarr
-    docker-compose up -d radarr
-    #docker-compose up -d cardigann
-    #docker-compose up -d lidarr
+    docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /home/aorith/.config/docker_configs/portainer:/data portainer/portainer
+    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d torproxy
+    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d jackett
+    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d sonarr
+    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d radarr
+    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d jellyfin
+    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d bazarr
+    docker-compose -f $DOCKERFILE_PATH/calibre/docker-compose.yml -p calibre up -d calibre-web
 }
 
 f_prune() {

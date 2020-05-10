@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+uid=$(id -u)
+gid=$(id -g)
+docker run --rm -v ${PWD}:/mnt -w /mnt -u ${uid}:${gid} mvdan/shfmt -i 4 "$@"
+

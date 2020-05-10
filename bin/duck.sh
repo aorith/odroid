@@ -4,7 +4,7 @@ THRESHOLD=72000
 TOKEN=$(sed -n '1p' "$HOME/secret/duckdns.txt")
 DOM1=$(sed -n '2p' "$HOME/secret/duckdns.txt")
 DOM2=$(sed -n '3p' "$HOME/secret/duckdns.txt")
-DOMS=( ${DOM1} )
+DOMS=( ${DOM1} ${DOM2} )
 
 for d in "${DOMS[@]}"
 do
