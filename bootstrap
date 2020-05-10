@@ -2,6 +2,9 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 DOTFILES="$SCRIPTPATH"
 
 ###############################################
+PIHOLE_DIR=(
+lan.list
+)
 
 BASE_DIR=(
 bin
@@ -49,6 +52,14 @@ do
 	ln -vs "$DOTFILES/.config/$F" "$HOME/.config/$F"
 done
 
+echo
+echo "... Linking: /etc/pihole ..."
+echo
+for F in "${PIHOLE_DIR[@]}"
+do
+	sudo rm -vrf "/etc/pihole/${F}"
+	sudo ln -vs "$DOTFILES/pihole/${F}" "/etc/pihole/$F"
+done
 
 echo
 echo "... Linking: /etc/systemd/system ..."
