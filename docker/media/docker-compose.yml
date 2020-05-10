@@ -9,7 +9,7 @@ services:
       TZ: Europe\Madrid
       UMASK_SET: 002
       PUID: 1000
-      PGID: 1001
+      PGID: 1000
       HTTP_PROXY: torproxy:8118
     volumes:
        - /home/aorith/.config/docker_configs/cardigann:/config
@@ -42,7 +42,7 @@ services:
       TZ: Europe\Madrid
       UMASK_SET: 002
       PUID: 1000
-      PGID: 1001
+      PGID: 1000
       RUN_OPTS: --ProxyConnection=torproxy:8118
     volumes:
        - /home/aorith/.config/docker_configs/jackett:/config
@@ -60,7 +60,7 @@ services:
       TZ: Europe\Madrid
       UMASK_SET: 002
       PUID: 1000
-      PGID: 1001
+      PGID: 1000
     volumes:
        - /home/aorith/.config/docker_configs/jenkins:/var/jenkins_home
     restart: "no"
@@ -75,7 +75,7 @@ services:
       TZ: Europe\Madrid
       UMASK_SET: 002
       PUID: 1000
-      PGID: 1001
+      PGID: 1000
     volumes:
        - /home/aorith/.config/docker_configs/lidarr:/config
        - /media/datos/media/downloads/music:/downloads
@@ -93,7 +93,7 @@ services:
       TZ: Europe\Madrid
       UMASK_SET: 002
       PUID: 1000
-      PGID: 1001
+      PGID: 1000
     volumes:
        - /home/aorith/.config/docker_configs/radarr:/config
        - /media/datos/media/downloads/movies:/downloads
@@ -111,19 +111,49 @@ services:
       TZ: Europe\Madrid
       UMASK_SET: 002
       PUID: 1000
-      PGID: 1001
+      PGID: 1000
     volumes:
        - /home/aorith/.config/docker_configs/sonarr:/config
        - /media/datos/media/downloads/tv:/downloads
        - /media/datos/media/videos/tv:/tv
        - /media/datos:/media/datos
     restart: "no"
-networks:
-    default:
-        driver: bridge
-        driver_opts:
-            com.docker.network.enable_ipv6: "false"
-        ipam:
-            driver: default
-            config:
-                - subnet: 172.16.0.0/16
+
+
+  jellyfin:
+    container_name: jellyfin
+    image: aorith/jellyfin
+    ports:
+        - "8096:8096/tcp"
+        - "8920:8920/tcp"
+    environment:
+      TZ: Europe\Madrid
+      UMASK_SET: 002
+      PUID: 1000
+      PGID: 1000
+    volumes:
+       - /home/aorith/.config/docker_configs/jellyfin:/config
+       - /media/datos/media/downloads/tv:/downloads
+       - /media/datos/media/videos/tv:/data/tvshows
+       - /media/datos/media/videos/movies:/data/movies
+       - /media/datos:/media/datos
+    build:
+        context: .
+        dockerfile: jellyfin
+
+
+  bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+      - UMASK_SET=002 #optional
+    volumes:
+       - /home/aorith/.config/docker_configs/bazarr:/config
+       - /media/datos/media/videos/movies:/movies
+       - /media/datos/media/videos/tv:/tv
+    ports:
+      - 6767:6767
+    restart: unless-stopped
