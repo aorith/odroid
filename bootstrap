@@ -3,7 +3,11 @@ DOTFILES="$SCRIPTPATH"
 
 ###############################################
 PIHOLE_DIR=(
-lan.list
+custom.list
+)
+
+DNSMASK_DIR=(
+04-pihole-static-dhcp.conf
 )
 
 BASE_DIR=(
@@ -62,6 +66,15 @@ do
 done
 
 echo
+echo "... Linking: /etc/dnsmasq.d ..."
+echo
+for F in "${DNSMASK_DIR[@]}"
+do
+	sudo rm -vrf "/etc/dnsmasq.d/${F}"
+	sudo ln -vs "$DOTFILES/dnsmasq.d/${F}" "/etc/dnsmasq.d/$F"
+done
+
+echo
 echo "... Linking: /etc/systemd/system ..."
 echo
 for F in "${SYSTEMD_DIR[@]}"
@@ -71,14 +84,7 @@ do
 done
 
 
-#echo
-#echo "... Linking /var/www/html ..."
-#echo
-#sudo rm -vri "/var/www/html"
-#sudo ln -vs "$DOTFILES/html" "/var/www/html"
-
 
 sudo systemctl daemon-reload
-
 echo; echo git submodule update --init
 
