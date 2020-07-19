@@ -5,9 +5,9 @@ Description=Knocker wrapper
 [Service]
 User=aorith
 Type=oneshot
-ExecStart=/home/aorith/bin/knock.sh open
+ExecStart=/home/aorith/odroid_bin/knock.sh open
 RemainAfterExit=true
-ExecStop=/home/aorith/bin/knock.sh close
+ExecStop=/home/aorith/odroid_bin/knock.sh close
 StandardOutput=journal
 
 [Install]

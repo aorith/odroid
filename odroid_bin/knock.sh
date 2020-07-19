@@ -3,7 +3,7 @@ now=$(date +'%Y.%m.%d %H:%M:%S')
 header="$(basename $0) $now"
 
 telmsg () {
-    /home/aorith/bin/telmsg.sh "$header
+    /home/aorith/odroid_bin/telmsg.sh "$header
     $1"
 }
 

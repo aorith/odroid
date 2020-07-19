@@ -1,0 +1,13 @@
+### DNS RECORDS
+
+## This will go straight to Googles DNS Servers.
+#dhcp-option=tag:googlesdns1,6,8.8.8.8
+#dhcp-option=tag:googlesdns2,6,8.8.4.4
+
+## This will go straight to Opendns Servers.
+# dhcp-option=tag:opendns1,6,208.67.222.220
+# dhcp-option=tag:opendns2,6,208.67.222.222
+
+## EXCLUDED DEVICES
+
+#dhcp-host=3c:22:fb:a0:0b:f5,set:googlesdns1

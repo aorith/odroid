@@ -11,7 +11,7 @@ DNSMASK_DIR=(
 )
 
 BASE_DIR=(
-bin
+odroid_bin
 )
 
 CONFIG_DIR=(
@@ -28,7 +28,6 @@ knocker.service
 )
 ###############################################
 ###############################################
-
 echo
 echo "... Linking: $HOME/.local ..."
 echo
