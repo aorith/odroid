@@ -3,7 +3,7 @@ Description=Monitor and Notifier of Failed and Successful ssh password logins
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c '/usr/bin/tail --follow=name --retry -f /var/log/auth.log |/bin/grep --line-buffered -P -- \'Accepted password|Failed password for (?!invalid user)\w+ from\' |while read -r line; do /home/aorith/odroid_bin/telmsg.sh "$line"; /bin/echo "$line"; done'
+ExecStart=/bin/bash -c '/usr/bin/tail -n1 --follow=name /var/log/auth.log |/bin/grep --line-buffered -P -- \'Accepted password|Failed password for (?!invalid user)\w+ from\' |while read -r line; do /home/aorith/odroid_bin/telmsg.sh "$line"; /bin/echo "$line"; done'
 PIDFile=/run/login_monitor.pid
 
 [Install]
