@@ -105,9 +105,7 @@ services:
   plex:
     container_name: plex
     image: linuxserver/plex
-    ports:
-        - "8096:8096/tcp"
-        - "8920:8920/tcp"
+    network_mode: host
     environment:
       TZ: Europe\Madrid
       UMASK_SET: 002
