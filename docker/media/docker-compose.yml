@@ -101,3 +101,22 @@ services:
        - /MEDIA/videos/movies:/data/movies
        - /MEDIA:/MEDIA
     restart: unless-stopped
+
+  plex:
+    container_name: plex
+    image: linuxserver/plex
+    ports:
+        - "8096:8096/tcp"
+        - "8920:8920/tcp"
+    environment:
+      TZ: Europe\Madrid
+      UMASK_SET: 002
+      PUID: 9999
+      PGID: 9999
+      VERSION: docker
+    volumes:
+       - /DATA/docker_configs/plex:/config
+       - /MEDIA/videos/tv:/tv
+       - /MEDIA/videos/movies:/movies
+       - /MEDIA:/MEDIA
+    restart: unless-stopped
