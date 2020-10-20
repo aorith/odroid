@@ -1,21 +1,5 @@
 version: '3'
 services:
-  cardigann:
-    container_name: cardigann
-    image: linuxserver/cardigann
-    ports:
-      - "5060:5060/tcp"
-    environment:
-      TZ: Europe\Madrid
-      UMASK_SET: 002
-      PUID: 1000
-      PGID: 1000
-      HTTP_PROXY: torproxy:8118
-    volumes:
-       - /home/aorith/.config/docker_configs/cardigann:/config
-    restart: "no"
-
-
   torproxy:
     container_name: torproxy
     image: aorith/torproxy
@@ -23,13 +7,12 @@ services:
       - "8118:8118"
       - "9050:9050"
       - "9051:9051"
-    restart: "no"
+    restart: unless-stopped
     build:
       context: .
       dockerfile: torproxy
-      args:
-        b: 1500 # kb per sec
-
+      #args:
+      #  b: 1500 # kb per sec
 
   jackett:
     container_name: jackett
@@ -41,48 +24,14 @@ services:
     environment:
       TZ: Europe\Madrid
       UMASK_SET: 002
-      PUID: 1000
-      PGID: 1000
+      PUID: 9999
+      PGID: 9999
       RUN_OPTS: --ProxyConnection=torproxy:8118
     volumes:
-       - /home/aorith/.config/docker_configs/jackett:/config
-       - /media/datos/media/downloads:/downloads
-       - /media/datos:/media/datos
-    restart: "no"
-
-
-  jenkins:
-    container_name: jenkins
-    image: nijlunsing/jenkins-armhf
-    ports:
-        - "8080:8080/tcp"
-    environment:
-      TZ: Europe\Madrid
-      UMASK_SET: 002
-      PUID: 1000
-      PGID: 1000
-    volumes:
-       - /home/aorith/.config/docker_configs/jenkins:/var/jenkins_home
-    restart: "no"
-
-
-  lidarr:
-    container_name: lidarr
-    image: linuxserver/lidarr
-    ports:
-        - "8686:8686/tcp"
-    environment:
-      TZ: Europe\Madrid
-      UMASK_SET: 002
-      PUID: 1000
-      PGID: 1000
-    volumes:
-       - /home/aorith/.config/docker_configs/lidarr:/config
-       - /media/datos/media/downloads/music:/downloads
-       - /media/datos/Syncthing/Phone-Music:/music
-       - /media/datos:/media/datos
-    restart: "no"
-
+       - /DATA/docker_configs/jackett:/config
+       - /MEDIA/downloads:/downloads
+       - /MEDIA:/MEDIA
+    restart: unless-stopped
 
   radarr:
     container_name: radarr
@@ -92,15 +41,14 @@ services:
     environment:
       TZ: Europe\Madrid
       UMASK_SET: 002
-      PUID: 1000
-      PGID: 1000
+      PUID: 9999
+      PGID: 9999
     volumes:
-       - /home/aorith/.config/docker_configs/radarr:/config
-       - /media/datos/media/downloads/movies:/downloads
-       - /media/datos/media/videos/movies:/movies
-       - /media/datos:/media/datos
-    restart: "no"
-
+       - /DATA/docker_configs/radarr:/config
+       - /MEDIA/downloads/movies:/downloads
+       - /MEDIA/videos/movies:/movies
+       - /MEDIA:/MEDIA
+    restart: unless-stopped
 
   sonarr:
     container_name: sonarr
@@ -110,50 +58,46 @@ services:
     environment:
       TZ: Europe\Madrid
       UMASK_SET: 002
-      PUID: 1000
-      PGID: 1000
+      PUID: 9999
+      PGID: 9999
     volumes:
-       - /home/aorith/.config/docker_configs/sonarr:/config
-       - /media/datos/media/downloads/tv:/downloads
-       - /media/datos/media/videos/tv:/tv
-       - /media/datos:/media/datos
-    restart: "no"
+       - /DATA/docker_configs/sonarr:/config
+       - /MEDIA/downloads/tv:/downloads
+       - /MEDIA/videos/tv:/tv
+       - /MEDIA:/MEDIA
+    restart: unless-stopped
 
+  bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=9999
+      - PGID=9999
+      - TZ=Europe/Madrid
+      - UMASK_SET=002 #optional
+    volumes:
+       - /DATA/docker_configs/bazarr:/config
+       - /MEDIA/videos/movies:/movies
+       - /MEDIA/videos/tv:/tv
+    ports:
+      - 6767:6767
+    restart: unless-stopped
 
   jellyfin:
     container_name: jellyfin
-    image: aorith/jellyfin
+    image: linuxserver/jellyfin
     ports:
         - "8096:8096/tcp"
         - "8920:8920/tcp"
     environment:
       TZ: Europe\Madrid
       UMASK_SET: 002
-      PUID: 1000
-      PGID: 1000
+      PUID: 9999
+      PGID: 9999
     volumes:
-       - /home/aorith/.config/docker_configs/jellyfin:/config
-       - /media/datos/media/downloads/tv:/downloads
-       - /media/datos/media/videos/tv:/data/tvshows
-       - /media/datos/media/videos/movies:/data/movies
-       - /media/datos:/media/datos
-    build:
-        context: .
-        dockerfile: jellyfin
-
-
-  bazarr:
-    image: linuxserver/bazarr
-    container_name: bazarr
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Madrid
-      - UMASK_SET=002 #optional
-    volumes:
-       - /home/aorith/.config/docker_configs/bazarr:/config
-       - /media/datos/media/videos/movies:/movies
-       - /media/datos/media/videos/tv:/tv
-    ports:
-      - 6767:6767
+       - /DATA/docker_configs/jellyfin:/config
+       - /MEDIA/downloads/tv:/downloads
+       - /MEDIA/videos/tv:/data/tvshows
+       - /MEDIA/videos/movies:/data/movies
+       - /MEDIA:/MEDIA
     restart: unless-stopped

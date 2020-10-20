@@ -5,7 +5,7 @@ FROM alpine
 
 # Install tor, privoxy and python3
 RUN apk --no-cache --no-progress upgrade && \
-    apk --no-cache --no-progress add bash curl privoxy shadow tini tor python3 && \
+    apk --no-cache --no-progress add bash curl privoxy shadow tini tor python3 py3-pip && \
     rm -rf /tmp/*
 
 COPY torproxy.sh /usr/bin/
