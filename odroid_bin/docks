@@ -15,13 +15,7 @@ f_start() {
     sudo systemctl start docker
     sudo systemctl start containerd
     docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /home/aorith/.config/docker_configs/portainer:/data portainer/portainer
-    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d torproxy
-    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d jackett
-    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d sonarr
-    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d radarr
-    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d jellyfin
-    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml -p media up -d bazarr
-    docker-compose -f $DOCKERFILE_PATH/calibre/docker-compose.yml -p calibre up -d calibre-web
+    docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml up -d
 }
 
 f_prune() {
