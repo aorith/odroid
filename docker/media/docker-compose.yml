@@ -26,7 +26,7 @@ services:
       UMASK_SET: 002
       PUID: 9999
       PGID: 9999
-      RUN_OPTS: --ProxyConnection=torproxy:8118
+      #RUN_OPTS: --ProxyConnection=torproxy:8118
     volumes:
        - /DATA/docker_configs/jackett:/config
        - /MEDIA/downloads:/downloads
@@ -83,38 +83,21 @@ services:
       - 6767:6767
     restart: unless-stopped
 
-  jellyfin:
-    container_name: jellyfin
-    image: linuxserver/jellyfin
-    ports:
-        - "8096:8096/tcp"
-        - "8920:8920/tcp"
-    environment:
-      TZ: Europe\Madrid
-      UMASK_SET: 002
-      PUID: 9999
-      PGID: 9999
-    volumes:
-       - /DATA/docker_configs/jellyfin:/config
-       - /MEDIA/downloads/tv:/downloads
-       - /MEDIA/videos/tv:/data/tvshows
-       - /MEDIA/videos/movies:/data/movies
-       - /MEDIA:/MEDIA
-    restart: unless-stopped
-
-  plex:
-    container_name: plex
-    image: linuxserver/plex
-    network_mode: host
-    environment:
-      TZ: Europe\Madrid
-      UMASK_SET: 002
-      PUID: 9999
-      PGID: 9999
-      VERSION: docker
-    volumes:
-       - /DATA/docker_configs/plex:/config
-       - /MEDIA/videos/tv:/tv
-       - /MEDIA/videos/movies:/movies
-       - /MEDIA:/MEDIA
-    restart: unless-stopped
+# jellyfin:
+#   container_name: jellyfin
+#   image: linuxserver/jellyfin
+#   ports:
+#       - "8096:8096/tcp"
+#       - "8920:8920/tcp"
+#   environment:
+#     TZ: Europe\Madrid
+#     UMASK_SET: 002
+#     PUID: 9999
+#     PGID: 9999
+#   volumes:
+#      - /DATA/docker_configs/jellyfin:/config
+#      - /MEDIA/downloads/tv:/downloads
+#      - /MEDIA/videos/tv:/data/tvshows
+#      - /MEDIA/videos/movies:/data/movies
+#      - /MEDIA:/MEDIA
+#   restart: unless-stopped
