@@ -14,7 +14,7 @@ f_start() {
     echo "Starting docker appliances..."
     sudo systemctl start docker
     sudo systemctl start containerd
-    docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /home/aorith/.config/docker_configs/portainer:/data portainer/portainer
+    # docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /home/aorith/.config/docker_configs/portainer:/data portainer/portainer
     docker-compose -f $DOCKERFILE_PATH/media/docker-compose.yml up -d
 }
 
